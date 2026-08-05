@@ -1,7 +1,11 @@
 function Display({pack}){
     return(
         <div>
-            {pack.map()}
+            {pack.map((card,idx) => (
+                <p key={idx}>
+                    {`${card.color} ${card.number}`}
+                </p>
+            ))}
         </div>
     );
 }

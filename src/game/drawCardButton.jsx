@@ -19,7 +19,6 @@ function DrawCardButton({setPack,pack}){
         setPack([...pack,{"color": color,
                           "number": num
         }])
-        console.log(pack);
     }
     return(
         <button onClick={() => getRandomCard()}>draw</button>
