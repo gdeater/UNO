@@ -1,6 +1,7 @@
-function ChangeColorUI({lastColor,setLastColor}){
+function ChangeColorUI({lastColor,setLastColor,endTurn}){
     function changeColor(color){
         setLastColor(color);
+        endTurn();
     }
     return(
         lastColor === `choose your color` 

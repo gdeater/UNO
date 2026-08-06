@@ -1,4 +1,4 @@
-function DrawCardButton({setPack,pack,setAnnouncement}){
+function DrawCardButton({setPack,pack,setAnnouncement,endTurn}){
     let color = 0;
     let num = 0;
     function getRandomCard(){
@@ -17,6 +17,7 @@ function DrawCardButton({setPack,pack,setAnnouncement}){
                           "number": "WILD"
                 }]);
                 setAnnouncement(`you draw a WILD`);
+                endTurn();
                 return;
             }
             else {
@@ -25,6 +26,7 @@ function DrawCardButton({setPack,pack,setAnnouncement}){
                           "number": "+4"
                 }]);
                 setAnnouncement(`you draw a +4`);
+                endTurn();
                 return;
             }
         }
@@ -44,7 +46,8 @@ function DrawCardButton({setPack,pack,setAnnouncement}){
         setPack([...pack,{"color": color,
                           "number": num
         }])
-        setAnnouncement(`you draw a ${color} ${num}`)
+        setAnnouncement(`you draw a ${color} ${num}`);
+        endTurn();
     }
     return(
         <button onClick={() => getRandomCard()}>draw</button>

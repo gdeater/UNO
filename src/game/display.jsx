@@ -1,5 +1,5 @@
 import { useState } from "react";
-function Display({pack, setAnnouncement, setLastColor, lastColor}){
+function Display({pack, setAnnouncement, setLastColor, lastColor,onWin,endTurn}){
     const [page,setPage] = useState(0);
     function changePage(dir){
         if (dir === 0){
@@ -16,21 +16,30 @@ function Display({pack, setAnnouncement, setLastColor, lastColor}){
         }
     }   
     function playCard(card,idx){
-        if ((lastColor === "" || card.color === lastColor) && card.color !== null){
-            setAnnouncement(`you played a: ${card.color} ${card.number}`)
-            pack.splice(idx,1);
-            setLastColor(card.color);
-            return;
-        }
-        else if (card.color === null){
-            setAnnouncement(`you played a: ${card.number}`);
-            pack.splice(idx,1);
-            setLastColor(`choose your color`);
-            return;
+    if ((lastColor === "" || card.color === lastColor) && card.color !== null){
+        setAnnouncement(`you played a: ${card.color} ${card.number}`)
+        pack.splice(idx,1);
+        setLastColor(card.color);
+        if (pack.length === 0){
+            onWin();
         } else {
-            setAnnouncement(`same color`);
-            return;
+            endTurn();
         }
+        return;
+    }
+    else if (card.color === null){
+        setAnnouncement(`you played a: ${card.number}`);
+        pack.splice(idx,1);
+        if (pack.length === 0){
+            onWin();
+        } else {
+            setLastColor(`choose your color`);
+        }
+        return;
+    } else {
+        setAnnouncement(`same color`);
+        return;
+    }
     }
     return(
         <div>
