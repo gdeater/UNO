@@ -1,55 +1,17 @@
 import { useState } from "react";
-function Display({pack, setAnnouncement, setLastColor, lastColor,onWin,endTurn}){
-    const [page,setPage] = useState(0);
-    function changePage(dir){
-        if (dir === 0){
-            if (page === 0){
-                return;
-            }
-            setPage(page - 1);
-        }
-        if (dir === 1){
-            if (page === Math.floor(pack.length / 5)){
-                return;
-            }
-            setPage(page + 1);
-        }
-    }   
-    function playCard(card,idx){
-    if ((lastColor === "" || card.color === lastColor) && card.color !== null){
-        setAnnouncement(`you played a: ${card.color} ${card.number}`)
-        pack.splice(idx,1);
-        setLastColor(card.color);
-        if (pack.length === 0){
-            onWin();
-        } else {
-            endTurn();
-        }
-        return;
+function Display({ pack, lastColor, isYourTurn, onPlayCard }) {
+    const [page, setPage] = useState(0);
+    function changePage(dir) {
+        if (dir === 0) { if (page === 0) return; setPage(page - 1); }
+        if (dir === 1) { if (page === Math.floor(pack.length / 5)) return; setPage(page + 1); }
     }
-    else if (card.color === null){
-        setAnnouncement(`you played a: ${card.number}`);
-        pack.splice(idx,1);
-        if (pack.length === 0){
-            onWin();
-        } else {
-            setLastColor(`choose your color`);
-        }
-        return;
-    } else {
-        setAnnouncement(`same color`);
-        return;
-    }
-    }
-    return(
+    return (
         <div>
-            <p>you currently has:{pack.length} cards includes:</p>
-            {pack.slice(page*5,(page+1)*5).map((card,idx) => (
-                <div key={idx}>
-                    <span>
-                        {`${card.color === null ? "" : card.color} ${card.number}`}
-                    </span>
-                    <button onClick={() => playCard(card,idx)}>play</button>
+            <p>you currently have: {pack.length} cards including:</p>
+            {pack.slice(page*5,(page+1)*5).map((card, idx) => (
+                <div key={page*5+idx}>
+                    <span>{`${card.color === null ? "" : card.color} ${card.number}`}</span>
+                    <button disabled={!isYourTurn} onClick={() => onPlayCard(card, page*5+idx)}>play</button>
                 </div>
             ))}
             <button onClick={() => changePage(0)}>up</button>
