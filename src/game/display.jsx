@@ -1,5 +1,5 @@
 import { useState } from "react";
-function Display({pack}){
+function Display({pack, setAnnouncement, setLastColor, lastColor}){
     const [page,setPage] = useState(0);
     function changePage(dir){
         if (dir === 0){
@@ -15,18 +15,32 @@ function Display({pack}){
             setPage(page + 1);
         }
     }   
-    function playCard(card){
-        console.log(card);
+    function playCard(card,idx){
+        if ((lastColor === "" || card.color === lastColor) && card.color !== null){
+            setAnnouncement(`you played a: ${card.color} ${card.number}`)
+            pack.splice(idx,1);
+            setLastColor(card.color);
+            return;
+        }
+        else if (card.color === null){
+            setAnnouncement(`you played a: ${card.number}`);
+            pack.splice(idx,1);
+            setLastColor(`choose your color`);
+            return;
+        } else {
+            setAnnouncement(`same color`);
+            return;
+        }
     }
     return(
         <div>
             <p>you currently has:{pack.length} cards includes:</p>
             {pack.slice(page*5,(page+1)*5).map((card,idx) => (
                 <div key={idx}>
-                    <p>
-                        {`${card.color} ${card.number}`}
-                    </p>
-                    <button onClick={() => playCard(card)}>play</button>
+                    <span>
+                        {`${card.color === null ? "" : card.color} ${card.number}`}
+                    </span>
+                    <button onClick={() => playCard(card,idx)}>play</button>
                 </div>
             ))}
             <button onClick={() => changePage(0)}>up</button>

@@ -1,7 +1,7 @@
-function Annoucement(){
+function Annoucement({setAnnouncement,announcement}){
     return(
         <div>
-            <p>hi</p>
+            <p>{announcement}</p>
         </div>
     );
 }
