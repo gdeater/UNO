@@ -24,7 +24,7 @@ function getRandomCard(){
         if (pick === 0){
             num = "+2";
         } else if (pick === 1){
-            num = "stop";
+            num = "+2";
         } else if (pick === 2){
             return { color: null, number: "WILD" };
         } else {
@@ -64,7 +64,7 @@ io.on("connection", (socket) => {
         let code = makeRoomCode();
         while (rooms[code]) code = makeRoomCode();
         rooms[code] = {
-            players: [{ id: socket.id, hand: [] }],
+            players: [{ id: socket.id, hand: [getRandomCard(),getRandomCard(),getRandomCard(),getRandomCard(),getRandomCard()] }],
             turn: 0,
             lastColor: "",
             awaitingColorChoice: null,
@@ -81,7 +81,7 @@ io.on("connection", (socket) => {
         const room = rooms[code];
         if (!room) return socket.emit("join_error", "That room code doesn't exist.");
         if (room.players.length >= 2) return socket.emit("join_error", "That room already has 2 players.");
-        room.players.push({ id: socket.id, hand: [] });
+        room.players.push({ id: socket.id, hand: [getRandomCard(),getRandomCard(),getRandomCard(),getRandomCard(),getRandomCard()] });
         socket.join(code);
         socket.data.roomCode = code;
         room.started = true;
@@ -123,13 +123,33 @@ io.on("connection", (socket) => {
             return;
         }
 
-        if (card.color === null){
+        if (card.color === null && card.number !== "+4"){
             room.lastColor = "choose your color";
             room.awaitingColorChoice = myIndex;
             sendState(socket.data.roomCode, `player ${myIndex+1} played a ${card.number} and is choosing a color...`);
             return;
         }
 
+        if (card.number === "+2"){
+            room.lastColor = `${card.color}`;
+            room.players[(myIndex + 1) % 2].hand.push(getRandomCard());
+            room.players[(myIndex + 1) % 2].hand.push(getRandomCard());
+            room.turn = myIndex === 0 ? 1 : 0;
+            sendState(socket.data.roomCode,`player ${myIndex + 1} got +2`);
+            console.log("+2");
+            return;
+        }
+        if (card.number === "+4" && card.color === null){
+            room.players[(myIndex + 1) % 2].hand.push(getRandomCard());
+            room.players[(myIndex + 1) % 2].hand.push(getRandomCard());
+            room.players[(myIndex + 1) % 2].hand.push(getRandomCard());
+            room.players[(myIndex + 1) % 2].hand.push(getRandomCard());
+            room.lastColor = "choose your color";
+            room.awaitingColorChoice = myIndex;
+            room.turn = myIndex === 0 ? 1 : 0;
+            sendState(socket.data.roomCode,`player ${myIndex + 1} got + 4 and the color is being chosen`);
+            return;
+        }
         room.lastColor = card.color;
         room.turn = myIndex === 0 ? 1 : 0;
         sendState(socket.data.roomCode, `player ${myIndex+1} played a ${card.color} ${card.number}.`);
