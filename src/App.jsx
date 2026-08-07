@@ -5,19 +5,26 @@ import ChangeColorUI from "./game/changeColorUI";
 import LastColor from "./game/lastColor";
 import JoinRoom from "./game/joinRoom";
 import OpponentInfo from "./game/opponentInfo";
+import ChatDisplay from "./chat/chatDisplay";
 import { useState, useEffect } from "react";
 import { socket } from "./socket";
 
-function App(){
+function App() {
   const [joined, setJoined] = useState(false);
   const [roomCodeInput, setRoomCodeInput] = useState("");
   const [myRoomCode, setMyRoomCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [announcement, setAnnouncement] = useState("");
   const [state, setState] = useState({
-    yourHand: [], opponentCardCount: 0, opponentConnected: false,
-    lastColor: "", isYourTurn: false, started: false,
-    awaitingColorChoice: false, winner: null,
+    yourHand: [],
+    opponentCardCount: 0,
+    opponentConnected: false,
+    lastColor: "",
+    isYourTurn: false,
+    started: false,
+    awaitingColorChoice: false,
+    winner: null,
+    chat: []
   });
 
   useEffect(() => {
@@ -31,6 +38,7 @@ function App(){
       setJoined(true);
     });
     socket.on("opponent_left", () => setAnnouncement("your opponent disconnected."));
+
     return () => {
       socket.off("room_created");
       socket.off("room_joined");
@@ -41,7 +49,7 @@ function App(){
     };
   }, []);
 
-  if (state.winner){
+  if (state.winner) {
     return (
       <div>
         <h1>UNO</h1>
@@ -50,9 +58,9 @@ function App(){
     );
   }
 
-  return(
+  return (
     <div>
-      <h1>UNO</h1>
+      <h1>------------UNO-------------</h1>
       {!joined ? (
         <JoinRoom
           roomCodeInput={roomCodeInput}
@@ -64,21 +72,33 @@ function App(){
         />
       ) : (
         <>
-          <OpponentInfo opponentCardCount={state.opponentCardCount}
-                        opponentConnected={state.opponentConnected}
-                        isYourTurn={state.isYourTurn}/>
-          <Display pack={state.yourHand}
-                   lastColor={state.lastColor}
-                   isYourTurn={state.isYourTurn}
-                   onPlayCard={(card, idx) => socket.emit("play_card", idx)}/>
-          <DrawCardButton onDraw={() => socket.emit("draw_card")} isYourTurn={state.isYourTurn}/>
-          <Annoucement announcement={announcement}/>
-          <LastColor lastColor={state.lastColor}/>
-          <ChangeColorUI awaitingColorChoice={state.awaitingColorChoice}
-                         onChooseColor={(color) => socket.emit("choose_color", color)}/>
+          <OpponentInfo
+            opponentCardCount={state.opponentCardCount}
+            opponentConnected={state.opponentConnected}
+            isYourTurn={state.isYourTurn}
+          />
+          <Display
+            pack={state.yourHand}
+            lastColor={state.lastColor}
+            isYourTurn={state.isYourTurn}
+            onPlayCard={(card, idx) => socket.emit("play_card", idx)}
+          />
+          <DrawCardButton
+            onDraw={() => socket.emit("draw_card")}
+            isYourTurn={state.isYourTurn}
+          />
+          <Annoucement announcement={announcement} />
+          <LastColor lastColor={state.lastColor} />
+          <ChangeColorUI
+            awaitingColorChoice={state.awaitingColorChoice}
+            onChooseColor={(color) => socket.emit("choose_color", color)}
+          />
+          {/* Pass state.chat instead of local chat array */}
+          <ChatDisplay chat={state.chat} socket={socket} />
         </>
       )}
     </div>
   );
 }
+
 export default App;

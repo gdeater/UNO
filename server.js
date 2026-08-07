@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import http from "http";
 import { Server } from "socket.io";
+import { reverse } from "dns";
 
 const app = express();
 app.use(cors());
@@ -14,17 +15,14 @@ const rooms = {};
 function makeRoomCode(){
     return Math.random().toString(36).slice(2,7).toUpperCase();
 }
-
-// same odds/logic as your original drawCardButton.jsx, just living on
-// the server now so both players share one fair source of randomness
 function getRandomCard(){
     let num = Math.floor(Math.random() * 10);
     if (num < 3){
         const pick = Math.floor(Math.random() * 4);
         if (pick === 0){
-            num = "+2";
-        } else if (pick === 1){
             num = "stop";
+        } else if (pick === 1){
+            num = "+2";
         } else if (pick === 2){
             return { color: null, number: "WILD" };
         } else {
@@ -48,6 +46,7 @@ function stateFor(room, idx, announcement){
         awaitingColorChoice: room.awaitingColorChoice === idx,
         winner: room.winner === idx ? "you" : (room.winner !== null ? "opponent" : null),
         announcement: announcement || "",
+        chat: room.chat
     };
 }
 
@@ -64,12 +63,13 @@ io.on("connection", (socket) => {
         let code = makeRoomCode();
         while (rooms[code]) code = makeRoomCode();
         rooms[code] = {
-            players: [{ id: socket.id, hand: [] }],
+            players: [{ id: socket.id, hand: [getRandomCard(),getRandomCard(),getRandomCard(),getRandomCard(),getRandomCard()] }],
             turn: 0,
             lastColor: "",
             awaitingColorChoice: null,
             started: false,
             winner: null,
+            chat: []
         };
         socket.join(code);
         socket.data.roomCode = code;
@@ -81,7 +81,7 @@ io.on("connection", (socket) => {
         const room = rooms[code];
         if (!room) return socket.emit("join_error", "That room code doesn't exist.");
         if (room.players.length >= 2) return socket.emit("join_error", "That room already has 2 players.");
-        room.players.push({ id: socket.id, hand: [] });
+        room.players.push({ id: socket.id, hand: [getRandomCard(),getRandomCard(),getRandomCard(),getRandomCard(),getRandomCard()] });
         socket.join(code);
         socket.data.roomCode = code;
         room.started = true;
@@ -123,13 +123,37 @@ io.on("connection", (socket) => {
             return;
         }
 
-        if (card.color === null){
+        if (card.color === null && card.number !== "+4"){
             room.lastColor = "choose your color";
             room.awaitingColorChoice = myIndex;
             sendState(socket.data.roomCode, `player ${myIndex+1} played a ${card.number} and is choosing a color...`);
             return;
         }
 
+        if (card.number === "+2"){
+            room.lastColor = `${card.color}`;
+            room.players[(myIndex + 1) % 2].hand.push(getRandomCard());
+            room.players[(myIndex + 1) % 2].hand.push(getRandomCard());
+            room.turn = myIndex === 0 ? 1 : 0;
+            sendState(socket.data.roomCode,`player ${myIndex + 1} got +2`);
+            console.log("+2");
+            return;
+        }
+        if (card.number === "+4" && card.color === null){
+            room.players[(myIndex + 1) % 2].hand.push(getRandomCard());
+            room.players[(myIndex + 1) % 2].hand.push(getRandomCard());
+            room.players[(myIndex + 1) % 2].hand.push(getRandomCard());
+            room.players[(myIndex + 1) % 2].hand.push(getRandomCard());
+            room.lastColor = "choose your color";
+            room.awaitingColorChoice = myIndex;
+            room.turn = myIndex === 0 ? 1 : 0;
+            sendState(socket.data.roomCode,`player ${myIndex + 1} got + 4 and the color is being chosen`);
+            return;
+        }
+        if (card.number === "stop"){
+            room.turn = myIndex === 0 ? 1 : 0;
+            sendState(socket.data.roomCode,`player ${myIndex + 1} played a stop`);
+        }
         room.lastColor = card.color;
         room.turn = myIndex === 0 ? 1 : 0;
         sendState(socket.data.roomCode, `player ${myIndex+1} played a ${card.color} ${card.number}.`);
@@ -145,7 +169,28 @@ io.on("connection", (socket) => {
         room.turn = myIndex === 0 ? 1 : 0;
         sendState(socket.data.roomCode, `color changed to ${color}.`);
     });
+    socket.on("chat_on", (msg) => {
+    const room = rooms[socket.data.roomCode];
+        if (!room) return;
 
+        const myIndex = room.players.findIndex((p) => p.id === socket.id);
+        if (myIndex === -1) return;
+
+        const message = String(msg).trim();
+        if (!message) return;
+
+        room.chat.unshift({
+            player: myIndex + 1,
+            message: message,
+        });
+
+        if (room.chat.length > 6) {
+            room.chat.pop();
+        }
+
+        // Pass existing announcement through to keep state consistent
+        sendState(socket.data.roomCode, "");
+    });
     socket.on("disconnect", () => {
         const code = socket.data.roomCode;
         if (code && rooms[code]) io.to(code).emit("opponent_left");
