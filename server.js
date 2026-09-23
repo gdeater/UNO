@@ -157,6 +157,7 @@ io.on("connection", (socket) => {
         room.lastColor = card.color;
         room.turn = myIndex === 0 ? 1 : 0;
         sendState(socket.data.roomCode, `player ${myIndex+1} played a ${card.color} ${card.number}.`);
+        return;
     });
 
     socket.on("choose_color", (color) => {
@@ -172,23 +173,17 @@ io.on("connection", (socket) => {
     socket.on("chat_on", (msg) => {
     const room = rooms[socket.data.roomCode];
         if (!room) return;
-
         const myIndex = room.players.findIndex((p) => p.id === socket.id);
         if (myIndex === -1) return;
-
         const message = String(msg).trim();
         if (!message) return;
-
         room.chat.unshift({
             player: myIndex + 1,
             message: message,
         });
-
         if (room.chat.length > 6) {
             room.chat.pop();
         }
-
-        // Pass existing announcement through to keep state consistent
         sendState(socket.data.roomCode, "");
     });
     socket.on("disconnect", () => {
